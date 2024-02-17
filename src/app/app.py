@@ -11,48 +11,43 @@ class App:
     def __init__(self):
         self.__weather = ""
 
-    def app(self) -> str | None:
+    def get_current_time(self):
+        return f"{datetime.now().day}/{datetime.now().month}/{datetime.now().year} - {datetime.now().hour}:{datetime.now().minute}:{datetime.now().second}"
+
+    def fetch_and_publish_weather(self, zip_code, country_code):
         logging.basicConfig(level=logging.ERROR)
 
         try:
-            zip_code: str = "14150-000"
-            country_code: str = "BR"
-
             gc_city = Geocoding(zip_code, country_code).get_coordinates()
 
-            lat = gc_city["lat"]
-            lon = gc_city["lon"]
+            city_weather = OpenWeatherMap(gc_city["lat"], gc_city["lon"]).get_weather()
 
-            city_weather = OpenWeatherMap(lat, lon).get_weather()
-
-            # main = city_weather["weather"][0]["main"]
             description = city_weather["weather"][0]["description"]
             temperature = city_weather["main"]["temp"]
             feels_like = city_weather["main"]["feels_like"]
             humidity = city_weather["main"]["humidity"]
 
-            current_time = datetime.now()
-            current_time = f"{current_time.day}/{current_time.month}/{current_time.year} - {current_time.hour}:{current_time.minute}:{current_time.second}"
+            current_time = self.get_current_time()
+            message_to_publish = f"Time: {current_time}\nWheater: {description}\nTemperature: {temperature}\nFeels Like: {feels_like}\nHumidity: {humidity}"
 
             if self.__weather != description:
                 self.__weather = description
+
                 print(current_time)
                 print(description)
                 print(temperature)
                 print(feels_like)
                 print(humidity)
-
+                print("-" * 30)
                 publisher = RabbitmqPublisher()
-                publisher.send_message(
-                    f"Horário: {current_time}\nClima: {description}\nTemperatura: {temperature}\nSensação Térmica: {feels_like}\nUmidade: {humidity}"
-                )
+                publisher.send_message(message_to_publish)
             else:
-                print(
-                    f"Horário: {current_time}\nClima: {description}\nTemperatura: {temperature}\nSensação Térmica: {feels_like}\nUmidade: {humidity}"
-                )
+                print("No climate changes")
+                print(message_to_publish)
+                print("-" * 30)
 
         except:
             logging.error(traceback.format_exc())
         finally:
-            time.sleep(10)
-            self.app()
+            time.sleep(180)
+            self.fetch_and_publish_weather(zip_code, country_code)
