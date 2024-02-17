@@ -30,24 +30,15 @@ class App:
             current_time = self.get_current_time()
             message_to_publish = f"Time: {current_time}\nWheater: {description}\nTemperature: {temperature}\nFeels Like: {feels_like}\nHumidity: {humidity}"
 
-            if self.__weather != description:
+            # if self.__weather != description:
+            if description:
                 self.__weather = description
 
-                print(current_time)
-                print(description)
-                print(temperature)
-                print(feels_like)
-                print(humidity)
-                print("-" * 30)
                 publisher = RabbitmqPublisher()
                 publisher.send_message(message_to_publish)
-            else:
-                print("No climate changes")
-                print(message_to_publish)
-                print("-" * 30)
 
         except:
             logging.error(traceback.format_exc())
         finally:
-            time.sleep(180)
+            time.sleep(60)
             self.fetch_and_publish_weather(zip_code, country_code)
